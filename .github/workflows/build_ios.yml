@@ -18,28 +18,41 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Generate clean iOS Scaffolding with Firebase Target
+        run: |
+          rm -rf ios/Runner.xcodeproj ios/Runner.xcworkspace ios/Podfile*
+          flutter create . --platforms=ios --org com.antigravity
+          # Set minimum deployment target iOS 13.0 untuk Firebase Realtime Database
+          sed -i '' 's/# platform :ios, .*/platform :ios, "13.0"/' ios/Podfile || true
+          echo "post_install do |installer|" >> ios/Podfile
+          echo "  installer.pods_project.targets.each do |target|" >> ios/Podfile
+          echo "    target.build_configurations.each do |config|" >> ios/Podfile
+          echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'" >> ios/Podfile
+          echo "      config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = '-'" >> ios/Podfile
+          echo "      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'" >> ios/Podfile
+          echo "      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'" >> ios/Podfile
+          echo "    end" >> ios/Podfile
+          echo "  end" >> ios/Podfile
+          echo "end" >> ios/Podfile
+
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Generate iOS Project Scaffold if missing
+      - name: Build iOS App Unsigned
         run: |
-          if [ ! -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
-            echo "Recreating iOS scaffolding..."
-            flutter create . --platforms=ios --org com.antigravity
-          fi
-
-      - name: Build iOS App (No Codesign)
-        run: flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign
+        env:
+          CODE_SIGNING_ALLOWED: "NO"
+          CODE_SIGNING_REQUIRED: "NO"
 
       - name: Package Payload into IPA
         run: |
-          mkdir -p build/ios/iphoneos/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r MixingPumpSCADA.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MixingPumpSCADA-IPA
-          path: build/ios/iphoneos/MixingPumpSCADA.ipa
+          path: MixingPumpSCADA.ipa
