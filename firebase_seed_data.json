@@ -1,0 +1,27 @@
+{
+  "mixing_pump_system": {
+    "mixer": {
+      "is_running": false,
+      "command": "STOP",
+      "current_ampere": 0.0,
+      "frequency_hz": 0.0,
+      "updated_at": 1731730000000
+    },
+    "pump": {
+      "is_running": false,
+      "command": "STOP",
+      "current_ampere": 0.0,
+      "frequency_hz": 0.0,
+      "pressure_pv": 0.0,
+      "pressure_sv": 4.5,
+      "pid": {
+        "mode": "AUTO",
+        "kp": 1.5,
+        "ki": 0.45,
+        "kd": 0.08,
+        "output_percent": 0.0
+      },
+      "updated_at": 1731730000000
+    }
+  }
+}

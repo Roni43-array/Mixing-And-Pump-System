@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "mixing_pump_system": {
+      ".read": true,
+      ".write": true,
+      "mixer": {
+        "current_ampere": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "frequency_hz": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60" }
+      },
+      "pump": {
+        "pressure_sv": { ".validate": "newData.isNumber() && newData.val() >= 0.5 && newData.val() <= 10.0" }
+      }
+    }
+  }
+}
