@@ -8,6 +8,18 @@ import '../models/system_telemetry.dart';
 /// sekaligus menyediakan Simulator Fisika VFD + PID secara real-time.
 class FirebaseScadaService {
   static const String rootPath = 'mixing_pump_system';
+  static const String databaseUrl =
+      'https://mixing-and-pump-system-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+  static const FirebaseOptions _firebaseOptions = FirebaseOptions(
+    apiKey: 'AIzaSyBrxZoMMi5snKq983FHICH4KCX_pWFA8Bk',
+    appId: '1:81304669213:ios:55d9f11d2693e6fbe1caf4',
+    messagingSenderId: '81304669213',
+    projectId: 'mixing-and-pump-system',
+    storageBucket: 'mixing-and-pump-system.firebasestorage.app',
+    iosBundleId: 'com.antigravity.mixingPumpIosScada',
+    databaseURL: databaseUrl,
+  );
 
   final StreamController<SystemTelemetry> _controller =
       StreamController<SystemTelemetry>.broadcast();
@@ -29,13 +41,18 @@ class FirebaseScadaService {
   Future<void> initialize() async {
     bool firebaseReady = false;
     try {
+      FirebaseApp app;
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
+        app = await Firebase.initializeApp(options: _firebaseOptions);
+      } else {
+        app = Firebase.app();
       }
-      _dbRef = FirebaseDatabase.instance.ref(rootPath);
+      _dbRef = FirebaseDatabase.instanceFor(
+        app: app,
+        databaseURL: databaseUrl,
+      ).ref(rootPath);
       firebaseReady = true;
     } catch (_) {
-      // Jika GoogleService-Info.plist belum dikonfigurasi, otomatis masuk mode Simulasi Lokal
       firebaseReady = false;
     }
 
@@ -63,6 +80,9 @@ class FirebaseScadaService {
             isFirebaseConnected: true,
             isSimulationActive: _state.isSimulationActive,
           );
+          _emit(_state);
+        } else {
+          _state = _state.copyWith(isFirebaseConnected: true);
           _emit(_state);
         }
       },
