@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import '../models/system_telemetry.dart';
 import '../services/firebase_scada_service.dart';
@@ -64,25 +64,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
             border: const Border(
               bottom: BorderSide(color: Color(0xFF1E293B), width: 1),
             ),
-            middle: const Column(
+            middle: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'MIXING & PUMP SCADA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
+                ClipOval(
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Text(
-                  'iOS Industrial Control Panel',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
+                const SizedBox(width: 8),
+                const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MIXING & PUMP SCADA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      'iOS Industrial Control Panel',
+                      style: TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

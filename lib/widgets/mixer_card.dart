@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import '../models/system_telemetry.dart';
 
@@ -52,7 +52,7 @@ class MixerCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  CupertinoIcons.Slowmo,
+                  CupertinoIcons.slowmo,
                   color: statusColor,
                   size: 26,
                 ),
