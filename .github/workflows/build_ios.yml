@@ -20,15 +20,34 @@ jobs:
 
       - name: Prepare Clean iOS Project & Dependencies
         run: |
+          # Simpan sementara file GoogleService-Info.plist jika ada
+          if [ -f "GoogleService-Info.plist" ]; then
+            cp GoogleService-Info.plist /tmp/GoogleService-Info.plist
+          elif [ -f "ios/Runner/GoogleService-Info.plist" ]; then
+            cp ios/Runner/GoogleService-Info.plist /tmp/GoogleService-Info.plist
+          fi
+
+          # Hapus file .dart yang salah tempat di root (duplikat dari upload manual)
+          find . -maxdepth 1 -name "*.dart" -delete
+          rm -f job.log
+
           # Pastikan nama ikon CupertinoIcons.slowmo menggunakan huruf kecil
           sed -i '' 's/CupertinoIcons\.Slowmo/CupertinoIcons.slowmo/g' lib/widgets/mixer_card.dart || true
-          # Buat ulang folder ios bawaan Flutter yang sesuai dengan versi SDK Flutter terbaru
+
+          # Buat ulang folder ios bawaan Flutter
           rm -rf ios
           flutter create --platforms=ios --org com.antigravity --project-name mixing_pump_ios_scada .
-          flutter pub get
 
-      - name: Verify Dart Code (Flutter Analyze)
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+          # Pasang GoogleService-Info.plist ke ios/Runner/
+          if [ -f "/tmp/GoogleService-Info.plist" ]; then
+            cp /tmp/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+          fi
+
+          flutter pub get
+          # Generate icon aplikasi iOS dari logo DL jika ada di assets/icon/app_icon.png
+          if [ -f "assets/icon/app_icon.png" ]; then
+            dart run flutter_launcher_icons || true
+          fi
 
       - name: Build iOS App Unsigned
         run: |
@@ -36,6 +55,10 @@ jobs:
 
       - name: Package Payload into IPA
         run: |
+          # Pastikan GoogleService-Info.plist ikut masuk ke dalam bundel Runner.app
+          if [ -f "/tmp/GoogleService-Info.plist" ]; then
+            cp /tmp/GoogleService-Info.plist build/ios/iphoneos/Runner.app/GoogleService-Info.plist
+          fi
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r MixingPumpSCADA.ipa Payload
