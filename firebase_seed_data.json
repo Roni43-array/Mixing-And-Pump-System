@@ -7,6 +7,12 @@
       "frequency_hz": 0.0,
       "updated_at": 1731730000000
     },
+    "mixer_2": {
+      "is_running": false,
+      "command": "STOP",
+      "frequency_hz": 0.0,
+      "updated_at": 1731730000000
+    },
     "pump": {
       "is_running": false,
       "command": "STOP",
@@ -21,6 +27,12 @@
         "kd": 0.08,
         "output_percent": 0.0
       },
+      "updated_at": 1731730000000
+    },
+    "pump_2": {
+      "is_running": false,
+      "command": "STOP",
+      "frequency_hz": 0.0,
       "updated_at": 1731730000000
     }
   }

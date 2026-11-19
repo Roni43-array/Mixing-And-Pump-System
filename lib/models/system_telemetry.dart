@@ -64,6 +64,63 @@ class MixerTelemetry {
   }
 }
 
+/// Model untuk unit tambahan (Mixer 2 & Pump 2) yang hanya berisi Start, Stop, dan atur Frequency.
+class SimpleVfdUnitTelemetry {
+  final bool isRunning;
+  final String command; // "START" atau "STOP"
+  final double frequencyHz; // Frekuensi yang diatur (0.0 - 50.0 Hz)
+  final int updatedAt;
+
+  const SimpleVfdUnitTelemetry({
+    required this.isRunning,
+    required this.command,
+    required this.frequencyHz,
+    required this.updatedAt,
+  });
+
+  factory SimpleVfdUnitTelemetry.initial() {
+    return SimpleVfdUnitTelemetry(
+      isRunning: false,
+      command: 'STOP',
+      frequencyHz: 0.0,
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  factory SimpleVfdUnitTelemetry.fromMap(Map<dynamic, dynamic>? map) {
+    if (map == null) return SimpleVfdUnitTelemetry.initial();
+    return SimpleVfdUnitTelemetry(
+      isRunning: map['is_running'] == true,
+      command: (map['command'] ?? 'STOP').toString(),
+      frequencyHz: _toDouble(map['frequency_hz'], 0.0),
+      updatedAt: _toInt(map['updated_at'], DateTime.now().millisecondsSinceEpoch),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'is_running': isRunning,
+      'command': command,
+      'frequency_hz': double.parse(frequencyHz.toStringAsFixed(1)),
+      'updated_at': updatedAt,
+    };
+  }
+
+  SimpleVfdUnitTelemetry copyWith({
+    bool? isRunning,
+    String? command,
+    double? frequencyHz,
+    int? updatedAt,
+  }) {
+    return SimpleVfdUnitTelemetry(
+      isRunning: isRunning ?? this.isRunning,
+      command: command ?? this.command,
+      frequencyHz: frequencyHz ?? this.frequencyHz,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
 class PidControlData {
   final String mode; // "AUTO" atau "MANUAL"
   final double kp; // Proportional Gain
@@ -215,13 +272,17 @@ class PumpTelemetry {
 
 class SystemTelemetry {
   final MixerTelemetry mixer;
+  final SimpleVfdUnitTelemetry mixer2;
   final PumpTelemetry pump;
+  final SimpleVfdUnitTelemetry pump2;
   final bool isFirebaseConnected;
   final bool isSimulationActive;
 
   const SystemTelemetry({
     required this.mixer,
+    required this.mixer2,
     required this.pump,
+    required this.pump2,
     required this.isFirebaseConnected,
     required this.isSimulationActive,
   });
@@ -229,7 +290,9 @@ class SystemTelemetry {
   factory SystemTelemetry.initial() {
     return SystemTelemetry(
       mixer: MixerTelemetry.initial(),
+      mixer2: SimpleVfdUnitTelemetry.initial(),
       pump: PumpTelemetry.initial(),
+      pump2: SimpleVfdUnitTelemetry.initial(),
       isFirebaseConnected: false,
       isSimulationActive: true,
     );
@@ -250,8 +313,18 @@ class SystemTelemetry {
       mixer: MixerTelemetry.fromMap(
         rootMap['mixer'] is Map ? rootMap['mixer'] as Map<dynamic, dynamic> : null,
       ),
+      mixer2: SimpleVfdUnitTelemetry.fromMap(
+        rootMap['mixer_2'] is Map
+            ? rootMap['mixer_2'] as Map<dynamic, dynamic>
+            : null,
+      ),
       pump: PumpTelemetry.fromMap(
         rootMap['pump'] is Map ? rootMap['pump'] as Map<dynamic, dynamic> : null,
+      ),
+      pump2: SimpleVfdUnitTelemetry.fromMap(
+        rootMap['pump_2'] is Map
+            ? rootMap['pump_2'] as Map<dynamic, dynamic>
+            : null,
       ),
       isFirebaseConnected: isFirebaseConnected,
       isSimulationActive: isSimulationActive,
@@ -260,13 +333,17 @@ class SystemTelemetry {
 
   SystemTelemetry copyWith({
     MixerTelemetry? mixer,
+    SimpleVfdUnitTelemetry? mixer2,
     PumpTelemetry? pump,
+    SimpleVfdUnitTelemetry? pump2,
     bool? isFirebaseConnected,
     bool? isSimulationActive,
   }) {
     return SystemTelemetry(
       mixer: mixer ?? this.mixer,
+      mixer2: mixer2 ?? this.mixer2,
       pump: pump ?? this.pump,
+      pump2: pump2 ?? this.pump2,
       isFirebaseConnected: isFirebaseConnected ?? this.isFirebaseConnected,
       isSimulationActive: isSimulationActive ?? this.isSimulationActive,
     );

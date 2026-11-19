@@ -200,7 +200,7 @@ class FirebaseScadaService {
     _emit(_state);
   }
 
-  /// Perintah START / STOP untuk Mixer
+  /// Perintah START / STOP untuk Mixer 1
   Future<void> setMixerRunning(bool start) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final updatedMixer = _state.mixer.copyWith(
@@ -220,7 +220,46 @@ class FirebaseScadaService {
     }
   }
 
-  /// Perintah START / STOP untuk Pump
+  /// Perintah START / STOP untuk Mixer 2
+  Future<void> setMixer2Running(bool start) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final double freq = start && _state.mixer2.frequencyHz == 0.0
+        ? 50.0
+        : (!start ? 0.0 : _state.mixer2.frequencyHz);
+    final updatedMixer2 = _state.mixer2.copyWith(
+      isRunning: start,
+      command: start ? 'START' : 'STOP',
+      frequencyHz: freq,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(mixer2: updatedMixer2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('mixer_2').update(updatedMixer2.toMap());
+    }
+  }
+
+  /// Mengatur Frequency (Hz) untuk Mixer 2
+  Future<void> updateMixer2Frequency(double newFreqHz) async {
+    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedMixer2 = _state.mixer2.copyWith(
+      frequencyHz: clampedFreq,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(mixer2: updatedMixer2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('mixer_2').update({
+        'frequency_hz': clampedFreq,
+        'updated_at': now,
+      });
+    }
+  }
+
+  /// Perintah START / STOP untuk Pump 1
   Future<void> setPumpRunning(bool start) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final updatedPump = _state.pump.copyWith(
@@ -235,6 +274,45 @@ class FirebaseScadaService {
       await _dbRef!.child('pump').update({
         'is_running': start,
         'command': start ? 'START' : 'STOP',
+        'updated_at': now,
+      });
+    }
+  }
+
+  /// Perintah START / STOP untuk Pump 2
+  Future<void> setPump2Running(bool start) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final double freq = start && _state.pump2.frequencyHz == 0.0
+        ? 50.0
+        : (!start ? 0.0 : _state.pump2.frequencyHz);
+    final updatedPump2 = _state.pump2.copyWith(
+      isRunning: start,
+      command: start ? 'START' : 'STOP',
+      frequencyHz: freq,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(pump2: updatedPump2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('pump_2').update(updatedPump2.toMap());
+    }
+  }
+
+  /// Mengatur Frequency (Hz) untuk Pump 2
+  Future<void> updatePump2Frequency(double newFreqHz) async {
+    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedPump2 = _state.pump2.copyWith(
+      frequencyHz: clampedFreq,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(pump2: updatedPump2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('pump_2').update({
+        'frequency_hz': clampedFreq,
         'updated_at': now,
       });
     }
@@ -291,10 +369,12 @@ class FirebaseScadaService {
     }
   }
 
-  /// Emergency Stop: Mematikan Mixer dan Pump secara bersamaan
+  /// Emergency Stop: Mematikan seluruh Mixer dan Pump secara bersamaan
   Future<void> emergencyStopAll() async {
     await setMixerRunning(false);
+    await setMixer2Running(false);
     await setPumpRunning(false);
+    await setPump2Running(false);
   }
 
   Future<void> _syncToFirebaseIfConnected() async {
@@ -302,7 +382,9 @@ class FirebaseScadaService {
     try {
       await _dbRef!.update({
         'mixer': _state.mixer.toMap(),
+        'mixer_2': _state.mixer2.toMap(),
         'pump': _state.pump.toMap(),
+        'pump_2': _state.pump2.toMap(),
       });
     } catch (_) {
       // Abaikan error tulis sesaat pada loop simulasi

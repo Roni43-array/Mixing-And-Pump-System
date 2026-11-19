@@ -6,6 +6,7 @@ import '../services/firebase_scada_service.dart';
 import '../widgets/mixer_card.dart';
 import '../widgets/pid_tuning_sheet.dart';
 import '../widgets/pump_card.dart';
+import '../widgets/simple_vfd_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   final FirebaseScadaService scadaService;
@@ -55,7 +56,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, snapshot) {
         final telemetry = snapshot.data ?? SystemTelemetry.initial();
         final mixer = telemetry.mixer;
+        final mixer2 = telemetry.mixer2;
         final pump = telemetry.pump;
+        final pump2 = telemetry.pump2;
 
         return CupertinoPageScaffold(
           backgroundColor: const Color(0xFF0F172A),
@@ -138,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Bagian 1: MIXER Card (Start, Stop, Arus, Frequency)
+                  // Bagian 1: MIXER 1 Card (Start, Stop, Arus, Frequency)
                   MixerCard(
                     mixer: mixer,
                     onCommandChanged: (start) {
@@ -147,7 +150,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Bagian 2: PUMP Card (Start, Stop, Ampere, Frequency, Pressure PV/SV, PID Control)
+                  // Bagian 2: MIXER 2 Card (Start, Stop, & Atur Frequency)
+                  SimpleVfdCard(
+                    title: 'UNIT MIXER 2',
+                    subtitle: 'Kontrol Start, Stop & Pengatur Frekuensi',
+                    startLabel: 'START MIXER 2',
+                    stopLabel: 'STOP MIXER 2',
+                    icon: CupertinoIcons.slowmo,
+                    activeColor: const Color(0xFF10B981),
+                    unit: mixer2,
+                    onCommandChanged: (start) {
+                      widget.scadaService.setMixer2Running(start);
+                    },
+                    onFrequencyChanged: (freq) {
+                      widget.scadaService.updateMixer2Frequency(freq);
+                    },
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Bagian 3: PUMP 1 Card (Start, Stop, Ampere, Frequency, Pressure PV/SV, PID Control)
                   PumpCard(
                     pump: pump,
                     onCommandChanged: (start) {
@@ -165,6 +186,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       );
                     },
                     onOpenTuningSheet: () => _openPidTuningModal(pump),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Bagian 4: PUMP 2 Card (Start, Stop, & Atur Frequency)
+                  SimpleVfdCard(
+                    title: 'UNIT PUMP 2',
+                    subtitle: 'Kontrol Start, Stop & Pengatur Frekuensi',
+                    startLabel: 'START PUMP 2',
+                    stopLabel: 'STOP PUMP 2',
+                    icon: CupertinoIcons.drop_fill,
+                    activeColor: const Color(0xFF38BDF8),
+                    unit: pump2,
+                    onCommandChanged: (start) {
+                      widget.scadaService.setPump2Running(start);
+                    },
+                    onFrequencyChanged: (freq) {
+                      widget.scadaService.updatePump2Frequency(freq);
+                    },
                   ),
                 ],
               ),
