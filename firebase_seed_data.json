@@ -5,12 +5,15 @@
       "command": "STOP",
       "current_ampere": 0.0,
       "frequency_hz": 0.0,
+      "set_frequency_hz": 50.0,
       "updated_at": 1731730000000
     },
     "mixer_2": {
       "is_running": false,
       "command": "STOP",
+      "current_ampere": 0.0,
       "frequency_hz": 0.0,
+      "set_frequency_hz": 50.0,
       "updated_at": 1731730000000
     },
     "pump": {
@@ -32,7 +35,9 @@
     "pump_2": {
       "is_running": false,
       "command": "STOP",
+      "current_ampere": 0.0,
       "frequency_hz": 0.0,
+      "set_frequency_hz": 50.0,
       "updated_at": 1731730000000
     }
   }

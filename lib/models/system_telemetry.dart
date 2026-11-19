@@ -4,8 +4,9 @@ library;
 class MixerTelemetry {
   final bool isRunning;
   final String command; // "START" atau "STOP"
-  final double currentAmpere; // Arus (A)
-  final double frequencyHz; // Frekuensi VFD (Hz)
+  final double currentAmpere; // Monitoring Arus (A)
+  final double frequencyHz; // Monitoring Frekuensi VFD Aktual (Hz)
+  final double setFrequencyHz; // Frequency Control / Setpoint VFD (0.0 - 50.0 Hz)
   final int updatedAt;
 
   const MixerTelemetry({
@@ -13,6 +14,7 @@ class MixerTelemetry {
     required this.command,
     required this.currentAmpere,
     required this.frequencyHz,
+    required this.setFrequencyHz,
     required this.updatedAt,
   });
 
@@ -22,17 +24,24 @@ class MixerTelemetry {
       command: 'STOP',
       currentAmpere: 0.0,
       frequencyHz: 0.0,
+      setFrequencyHz: 50.0,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
   }
 
   factory MixerTelemetry.fromMap(Map<dynamic, dynamic>? map) {
     if (map == null) return MixerTelemetry.initial();
+    final double freq = _toDouble(map['frequency_hz'], 0.0);
+    final double setFreq = _toDouble(
+      map['set_frequency_hz'],
+      freq > 0.0 ? freq : 50.0,
+    );
     return MixerTelemetry(
       isRunning: map['is_running'] == true,
       command: (map['command'] ?? 'STOP').toString(),
       currentAmpere: _toDouble(map['current_ampere'], 0.0),
-      frequencyHz: _toDouble(map['frequency_hz'], 0.0),
+      frequencyHz: freq,
+      setFrequencyHz: setFreq,
       updatedAt: _toInt(map['updated_at'], DateTime.now().millisecondsSinceEpoch),
     );
   }
@@ -43,6 +52,7 @@ class MixerTelemetry {
       'command': command,
       'current_ampere': double.parse(currentAmpere.toStringAsFixed(2)),
       'frequency_hz': double.parse(frequencyHz.toStringAsFixed(1)),
+      'set_frequency_hz': double.parse(setFrequencyHz.toStringAsFixed(1)),
       'updated_at': updatedAt,
     };
   }
@@ -52,6 +62,7 @@ class MixerTelemetry {
     String? command,
     double? currentAmpere,
     double? frequencyHz,
+    double? setFrequencyHz,
     int? updatedAt,
   }) {
     return MixerTelemetry(
@@ -59,22 +70,28 @@ class MixerTelemetry {
       command: command ?? this.command,
       currentAmpere: currentAmpere ?? this.currentAmpere,
       frequencyHz: frequencyHz ?? this.frequencyHz,
+      setFrequencyHz: setFrequencyHz ?? this.setFrequencyHz,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
 
-/// Model untuk unit tambahan (Mixer 2 & Pump 2) yang hanya berisi Start, Stop, dan atur Frequency.
+/// Model untuk unit tambahan (Mixer 2 & Pump 2) yang berisi:
+/// Start, Stop, Monitoring Arus (A), Monitoring Frequency (Hz), dan Frequency Control (Hz).
 class SimpleVfdUnitTelemetry {
   final bool isRunning;
   final String command; // "START" atau "STOP"
-  final double frequencyHz; // Frekuensi yang diatur (0.0 - 50.0 Hz)
+  final double currentAmpere; // Monitoring Arus (A)
+  final double frequencyHz; // Monitoring Frekuensi Aktual (Hz)
+  final double setFrequencyHz; // Frequency Control / Setpoint (0.0 - 50.0 Hz)
   final int updatedAt;
 
   const SimpleVfdUnitTelemetry({
     required this.isRunning,
     required this.command,
+    required this.currentAmpere,
     required this.frequencyHz,
+    required this.setFrequencyHz,
     required this.updatedAt,
   });
 
@@ -82,17 +99,26 @@ class SimpleVfdUnitTelemetry {
     return SimpleVfdUnitTelemetry(
       isRunning: false,
       command: 'STOP',
+      currentAmpere: 0.0,
       frequencyHz: 0.0,
+      setFrequencyHz: 50.0,
       updatedAt: DateTime.now().millisecondsSinceEpoch,
     );
   }
 
   factory SimpleVfdUnitTelemetry.fromMap(Map<dynamic, dynamic>? map) {
     if (map == null) return SimpleVfdUnitTelemetry.initial();
+    final double freq = _toDouble(map['frequency_hz'], 0.0);
+    final double setFreq = _toDouble(
+      map['set_frequency_hz'],
+      freq > 0.0 ? freq : 50.0,
+    );
     return SimpleVfdUnitTelemetry(
       isRunning: map['is_running'] == true,
       command: (map['command'] ?? 'STOP').toString(),
-      frequencyHz: _toDouble(map['frequency_hz'], 0.0),
+      currentAmpere: _toDouble(map['current_ampere'], 0.0),
+      frequencyHz: freq,
+      setFrequencyHz: setFreq,
       updatedAt: _toInt(map['updated_at'], DateTime.now().millisecondsSinceEpoch),
     );
   }
@@ -101,7 +127,9 @@ class SimpleVfdUnitTelemetry {
     return {
       'is_running': isRunning,
       'command': command,
+      'current_ampere': double.parse(currentAmpere.toStringAsFixed(2)),
       'frequency_hz': double.parse(frequencyHz.toStringAsFixed(1)),
+      'set_frequency_hz': double.parse(setFrequencyHz.toStringAsFixed(1)),
       'updated_at': updatedAt,
     };
   }
@@ -109,13 +137,17 @@ class SimpleVfdUnitTelemetry {
   SimpleVfdUnitTelemetry copyWith({
     bool? isRunning,
     String? command,
+    double? currentAmpere,
     double? frequencyHz,
+    double? setFrequencyHz,
     int? updatedAt,
   }) {
     return SimpleVfdUnitTelemetry(
       isRunning: isRunning ?? this.isRunning,
       command: command ?? this.command,
+      currentAmpere: currentAmpere ?? this.currentAmpere,
       frequencyHz: frequencyHz ?? this.frequencyHz,
+      setFrequencyHz: setFrequencyHz ?? this.setFrequencyHz,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

@@ -102,10 +102,12 @@ class FirebaseScadaService {
       const double dt = 0.4; // 400 ms dalam detik
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      // 1. Simulasi Dinamika MIXER (Arus & Frequency)
+      // 1. Simulasi Dinamika MIXER 1 (Arus & Frequency mengikuti setFrequencyHz)
       final mixer = _state.mixer;
-      double targetMixerFreq = mixer.isRunning ? 50.0 : 0.0;
-      double newMixerFreq = _approach(mixer.frequencyHz, targetMixerFreq, 6.5);
+      final double targetMixerFreq =
+          mixer.isRunning ? mixer.setFrequencyHz : 0.0;
+      final double newMixerFreq =
+          _approach(mixer.frequencyHz, targetMixerFreq, 6.5);
       double newMixerAmp = 0.0;
       if (newMixerFreq > 0.5) {
         final jitter = (_rng.nextDouble() - 0.5) * 0.25;
@@ -118,7 +120,25 @@ class FirebaseScadaService {
         updatedAt: now,
       );
 
-      // 2. Simulasi Dinamika PUMP + Kontrol PID Tekanan
+      // 2. Simulasi Dinamika MIXER 2 (Arus & Frequency mengikuti setFrequencyHz)
+      final mixer2 = _state.mixer2;
+      final double targetMixer2Freq =
+          mixer2.isRunning ? mixer2.setFrequencyHz : 0.0;
+      final double newMixer2Freq =
+          _approach(mixer2.frequencyHz, targetMixer2Freq, 6.5);
+      double newMixer2Amp = 0.0;
+      if (newMixer2Freq > 0.5) {
+        final jitter = (_rng.nextDouble() - 0.5) * 0.25;
+        newMixer2Amp = (newMixer2Freq / 50.0) * 11.5 + jitter;
+      }
+
+      final updatedMixer2 = mixer2.copyWith(
+        frequencyHz: _round1(newMixer2Freq),
+        currentAmpere: _round2(math.max(0.0, newMixer2Amp)),
+        updatedAt: now,
+      );
+
+      // 3. Simulasi Dinamika PUMP 1 + Kontrol PID Tekanan
       final pump = _state.pump;
       final pid = pump.pid;
 
@@ -183,9 +203,29 @@ class FirebaseScadaService {
         updatedAt: now,
       );
 
+      // 4. Simulasi Dinamika PUMP 2 (Arus & Frequency mengikuti setFrequencyHz)
+      final pump2 = _state.pump2;
+      final double targetPump2Freq =
+          pump2.isRunning ? pump2.setFrequencyHz : 0.0;
+      final double newPump2Freq =
+          _approach(pump2.frequencyHz, targetPump2Freq, 6.0);
+      double newPump2Amp = 0.0;
+      if (newPump2Freq > 0.5) {
+        final jitter = (_rng.nextDouble() - 0.5) * 0.25;
+        newPump2Amp = (newPump2Freq / 50.0) * 14.2 + jitter;
+      }
+
+      final updatedPump2 = pump2.copyWith(
+        frequencyHz: _round1(newPump2Freq),
+        currentAmpere: _round2(math.max(0.0, newPump2Amp)),
+        updatedAt: now,
+      );
+
       _state = _state.copyWith(
         mixer: updatedMixer,
+        mixer2: updatedMixer2,
         pump: updatedPump,
+        pump2: updatedPump2,
       );
       _emit(_state);
 
@@ -200,12 +240,15 @@ class FirebaseScadaService {
     _emit(_state);
   }
 
-  /// Perintah START / STOP untuk Mixer 1
+  /// Perintah START / STOP untuk Mixer 1 (UNIT MIXER AGITATOR)
   Future<void> setMixerRunning(bool start) async {
     final now = DateTime.now().millisecondsSinceEpoch;
+    final double setFreq =
+        start && _state.mixer.setFrequencyHz <= 0.0 ? 50.0 : _state.mixer.setFrequencyHz;
     final updatedMixer = _state.mixer.copyWith(
       isRunning: start,
       command: start ? 'START' : 'STOP',
+      setFrequencyHz: setFreq,
       updatedAt: now,
     );
     _state = _state.copyWith(mixer: updatedMixer);
@@ -215,6 +258,31 @@ class FirebaseScadaService {
       await _dbRef!.child('mixer').update({
         'is_running': start,
         'command': start ? 'START' : 'STOP',
+        'set_frequency_hz': setFreq,
+        'updated_at': now,
+      });
+    }
+  }
+
+  /// Mengatur Frequency Control (Hz) untuk Mixer 1 (UNIT MIXER AGITATOR)
+  Future<void> updateMixerFrequency(double newFreqHz) async {
+    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedMixer = _state.mixer.copyWith(
+      setFrequencyHz: clampedFreq,
+      frequencyHz: !_state.isSimulationActive && _state.mixer.isRunning
+          ? clampedFreq
+          : _state.mixer.frequencyHz,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(mixer: updatedMixer);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('mixer').update({
+        'set_frequency_hz': clampedFreq,
+        if (!_state.isSimulationActive && _state.mixer.isRunning)
+          'frequency_hz': clampedFreq,
         'updated_at': now,
       });
     }
@@ -223,29 +291,13 @@ class FirebaseScadaService {
   /// Perintah START / STOP untuk Mixer 2
   Future<void> setMixer2Running(bool start) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final double freq = start && _state.mixer2.frequencyHz == 0.0
+    final double setFreq = start && _state.mixer2.setFrequencyHz <= 0.0
         ? 50.0
-        : (!start ? 0.0 : _state.mixer2.frequencyHz);
+        : _state.mixer2.setFrequencyHz;
     final updatedMixer2 = _state.mixer2.copyWith(
       isRunning: start,
       command: start ? 'START' : 'STOP',
-      frequencyHz: freq,
-      updatedAt: now,
-    );
-    _state = _state.copyWith(mixer2: updatedMixer2);
-    _emit(_state);
-
-    if (_state.isFirebaseConnected && _dbRef != null) {
-      await _dbRef!.child('mixer_2').update(updatedMixer2.toMap());
-    }
-  }
-
-  /// Mengatur Frequency (Hz) untuk Mixer 2
-  Future<void> updateMixer2Frequency(double newFreqHz) async {
-    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final updatedMixer2 = _state.mixer2.copyWith(
-      frequencyHz: clampedFreq,
+      setFrequencyHz: setFreq,
       updatedAt: now,
     );
     _state = _state.copyWith(mixer2: updatedMixer2);
@@ -253,7 +305,33 @@ class FirebaseScadaService {
 
     if (_state.isFirebaseConnected && _dbRef != null) {
       await _dbRef!.child('mixer_2').update({
-        'frequency_hz': clampedFreq,
+        'is_running': start,
+        'command': start ? 'START' : 'STOP',
+        'set_frequency_hz': setFreq,
+        'updated_at': now,
+      });
+    }
+  }
+
+  /// Mengatur Frequency Control (Hz) untuk Mixer 2
+  Future<void> updateMixer2Frequency(double newFreqHz) async {
+    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedMixer2 = _state.mixer2.copyWith(
+      setFrequencyHz: clampedFreq,
+      frequencyHz: !_state.isSimulationActive && _state.mixer2.isRunning
+          ? clampedFreq
+          : _state.mixer2.frequencyHz,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(mixer2: updatedMixer2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('mixer_2').update({
+        'set_frequency_hz': clampedFreq,
+        if (!_state.isSimulationActive && _state.mixer2.isRunning)
+          'frequency_hz': clampedFreq,
         'updated_at': now,
       });
     }
@@ -282,29 +360,13 @@ class FirebaseScadaService {
   /// Perintah START / STOP untuk Pump 2
   Future<void> setPump2Running(bool start) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final double freq = start && _state.pump2.frequencyHz == 0.0
+    final double setFreq = start && _state.pump2.setFrequencyHz <= 0.0
         ? 50.0
-        : (!start ? 0.0 : _state.pump2.frequencyHz);
+        : _state.pump2.setFrequencyHz;
     final updatedPump2 = _state.pump2.copyWith(
       isRunning: start,
       command: start ? 'START' : 'STOP',
-      frequencyHz: freq,
-      updatedAt: now,
-    );
-    _state = _state.copyWith(pump2: updatedPump2);
-    _emit(_state);
-
-    if (_state.isFirebaseConnected && _dbRef != null) {
-      await _dbRef!.child('pump_2').update(updatedPump2.toMap());
-    }
-  }
-
-  /// Mengatur Frequency (Hz) untuk Pump 2
-  Future<void> updatePump2Frequency(double newFreqHz) async {
-    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final updatedPump2 = _state.pump2.copyWith(
-      frequencyHz: clampedFreq,
+      setFrequencyHz: setFreq,
       updatedAt: now,
     );
     _state = _state.copyWith(pump2: updatedPump2);
@@ -312,7 +374,33 @@ class FirebaseScadaService {
 
     if (_state.isFirebaseConnected && _dbRef != null) {
       await _dbRef!.child('pump_2').update({
-        'frequency_hz': clampedFreq,
+        'is_running': start,
+        'command': start ? 'START' : 'STOP',
+        'set_frequency_hz': setFreq,
+        'updated_at': now,
+      });
+    }
+  }
+
+  /// Mengatur Frequency Control (Hz) untuk Pump 2
+  Future<void> updatePump2Frequency(double newFreqHz) async {
+    final clampedFreq = _round1(newFreqHz.clamp(0.0, 50.0));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final updatedPump2 = _state.pump2.copyWith(
+      setFrequencyHz: clampedFreq,
+      frequencyHz: !_state.isSimulationActive && _state.pump2.isRunning
+          ? clampedFreq
+          : _state.pump2.frequencyHz,
+      updatedAt: now,
+    );
+    _state = _state.copyWith(pump2: updatedPump2);
+    _emit(_state);
+
+    if (_state.isFirebaseConnected && _dbRef != null) {
+      await _dbRef!.child('pump_2').update({
+        'set_frequency_hz': clampedFreq,
+        if (!_state.isSimulationActive && _state.pump2.isRunning)
+          'frequency_hz': clampedFreq,
         'updated_at': now,
       });
     }

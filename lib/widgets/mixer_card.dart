@@ -6,11 +6,13 @@ import '../models/system_telemetry.dart';
 class MixerCard extends StatelessWidget {
   final MixerTelemetry mixer;
   final ValueChanged<bool> onCommandChanged;
+  final ValueChanged<double> onFrequencyChanged;
 
   const MixerCard({
     super.key,
     required this.mixer,
     required this.onCommandChanged,
+    required this.onFrequencyChanged,
   });
 
   @override
@@ -87,7 +89,7 @@ class MixerCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // Baris Data Arus (Ampere) & Frequency (Hz)
+          // Baris Data Monitoring Arus (Ampere) & Monitoring Frequency (Hz)
           Row(
             children: [
               Expanded(
@@ -114,6 +116,126 @@ class MixerCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+
+          // Panel Frequency Control (VFD)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF334155)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.slider_horizontal_3,
+                          size: 16,
+                          color: Color(0xFF38BDF8),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Frequency Control (VFD)',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        _FreqStepButton(
+                          icon: CupertinoIcons.minus,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onFrequencyChanged(mixer.setFrequencyHz - 1.0);
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              mixer.setFrequencyHz.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Hz',
+                              style: TextStyle(
+                                color: Color(0xFF38BDF8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 10),
+                        _FreqStepButton(
+                          icon: CupertinoIcons.plus,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onFrequencyChanged(mixer.setFrequencyHz + 1.0);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoSlider(
+                    value: mixer.setFrequencyHz.clamp(0.0, 50.0),
+                    min: 0.0,
+                    max: 50.0,
+                    activeColor: const Color(0xFF38BDF8),
+                    onChanged: onFrequencyChanged,
+                  ),
+                ),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '0.0 Hz',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      '25.0 Hz',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                      ),
+                    ),
+                    Text(
+                      'Rated 50.0 Hz',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
 
@@ -289,6 +411,37 @@ class _MetricTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FreqStepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _FreqStepButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF475569)),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 14,
+        ),
       ),
     );
   }

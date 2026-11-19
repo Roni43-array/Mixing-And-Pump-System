@@ -141,19 +141,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Bagian 1: MIXER 1 Card (Start, Stop, Arus, Frequency)
+                  // Bagian 1: MIXER 1 Card (Start, Stop, Arus, Frequency & Frequency Control)
                   MixerCard(
                     mixer: mixer,
                     onCommandChanged: (start) {
                       widget.scadaService.setMixerRunning(start);
                     },
+                    onFrequencyChanged: (freq) {
+                      widget.scadaService.updateMixerFrequency(freq);
+                    },
                   ),
                   const SizedBox(height: 18),
 
-                  // Bagian 2: MIXER 2 Card (Start, Stop, & Atur Frequency)
+                  // Bagian 2: MIXER 2 Card (Start, Stop, Monitoring Arus & Frequency, Frequency Control)
                   SimpleVfdCard(
                     title: 'UNIT MIXER 2',
-                    subtitle: 'Kontrol Start, Stop & Pengatur Frekuensi',
+                    subtitle: 'Monitoring Arus, Frekuensi & Kontrol VFD',
                     startLabel: 'START MIXER 2',
                     stopLabel: 'STOP MIXER 2',
                     icon: CupertinoIcons.slowmo,
@@ -189,10 +192,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Bagian 4: PUMP 2 Card (Start, Stop, & Atur Frequency)
+                  // Bagian 4: PUMP 2 Card (Start, Stop, Monitoring Arus & Frequency, Frequency Control)
                   SimpleVfdCard(
                     title: 'UNIT PUMP 2',
-                    subtitle: 'Kontrol Start, Stop & Pengatur Frekuensi',
+                    subtitle: 'Monitoring Arus, Frekuensi & Kontrol VFD',
                     startLabel: 'START PUMP 2',
                     stopLabel: 'STOP PUMP 2',
                     icon: CupertinoIcons.drop_fill,

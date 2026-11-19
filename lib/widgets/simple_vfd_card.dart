@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/system_telemetry.dart';
 
 /// Kartu kontrol untuk Mixer 2 dan Pump 2:
-/// Hanya berisi tombol Start, Stop, serta tampilan & pengatur Frequency (Hz).
+/// Berisi Monitoring Arus (A), Monitoring Frequency (Hz), Frequency Control (VFD), serta tombol Start & Stop.
 class SimpleVfdCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -103,9 +103,39 @@ class SimpleVfdCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Panel Tampilan & Pengatur Frequency (Hz)
+          // Baris Monitoring Arus (Current) & Monitoring Frequency (Hz)
+          Row(
+            children: [
+              Expanded(
+                child: _SimpleMetricTile(
+                  label: 'Arus (Current)',
+                  value: unit.currentAmpere.toStringAsFixed(2),
+                  unit: 'A',
+                  icon: CupertinoIcons.bolt_fill,
+                  accentColor: const Color(0xFFF59E0B),
+                  progress: (unit.currentAmpere / 20.0).clamp(0.0, 1.0),
+                  maxLabel: 'Maks 20.0 A',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SimpleMetricTile(
+                  label: 'Frequency',
+                  value: unit.frequencyHz.toStringAsFixed(1),
+                  unit: 'Hz',
+                  icon: CupertinoIcons.waveform_path_ecg,
+                  accentColor: const Color(0xFF38BDF8),
+                  progress: (unit.frequencyHz / 50.0).clamp(0.0, 1.0),
+                  maxLabel: 'Rated 50.0 Hz',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Panel Pengatur Frequency Control (VFD)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -122,7 +152,7 @@ class SimpleVfdCard extends StatelessWidget {
                     const Row(
                       children: [
                         Icon(
-                          CupertinoIcons.waveform_path_ecg,
+                          CupertinoIcons.slider_horizontal_3,
                           size: 16,
                           color: Color(0xFF38BDF8),
                         ),
@@ -143,7 +173,7 @@ class SimpleVfdCard extends StatelessWidget {
                           icon: CupertinoIcons.minus,
                           onTap: () {
                             HapticFeedback.selectionClick();
-                            onFrequencyChanged(unit.frequencyHz - 1.0);
+                            onFrequencyChanged(unit.setFrequencyHz - 1.0);
                           },
                         ),
                         const SizedBox(width: 10),
@@ -152,10 +182,10 @@ class SimpleVfdCard extends StatelessWidget {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              unit.frequencyHz.toStringAsFixed(1),
+                              unit.setFrequencyHz.toStringAsFixed(1),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 24,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 fontFeatures: [FontFeature.tabularFigures()],
                               ),
@@ -176,7 +206,7 @@ class SimpleVfdCard extends StatelessWidget {
                           icon: CupertinoIcons.plus,
                           onTap: () {
                             HapticFeedback.selectionClick();
-                            onFrequencyChanged(unit.frequencyHz + 1.0);
+                            onFrequencyChanged(unit.setFrequencyHz + 1.0);
                           },
                         ),
                       ],
@@ -187,7 +217,7 @@ class SimpleVfdCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoSlider(
-                    value: unit.frequencyHz.clamp(0.0, 50.0),
+                    value: unit.setFrequencyHz.clamp(0.0, 50.0),
                     min: 0.0,
                     max: 50.0,
                     activeColor: const Color(0xFF38BDF8),
@@ -223,7 +253,7 @@ class SimpleVfdCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Tombol Kontrol START & STOP
           Row(
@@ -254,6 +284,103 @@ class SimpleVfdCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SimpleMetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final IconData icon;
+  final Color accentColor;
+  final double progress;
+  final String maxLabel;
+
+  const _SimpleMetricTile({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+    required this.accentColor,
+    required this.progress,
+    required this.maxLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: accentColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: const Color(0xFF1E293B),
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            maxLabel,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+            ),
           ),
         ],
       ),
